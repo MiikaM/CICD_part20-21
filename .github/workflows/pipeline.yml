@@ -9,38 +9,38 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  # frontend_tests:
-  #   runs-on: ubuntu-20.04
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-node@v3
-  #       with:
-  #         node-version: "16"
-  #     - name: npm install
-  #       run: cd frontend && npm install
-  #     - name: build
-  #       run: cd frontend && npm run build
-  #     - name: test
-  #       run: cd frontend && npm run test
-  # backend_tests:
-  #   runs-on: ubuntu-20.04
-  #   needs: frontend_tests
-  #   env: 
-  #     TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-node@v3
-  #       with:
-  #         node-version: "16"
-  #     - name: npm install backend
-  #       run: cd backend && npm install
-  #     - name: permissions for node_modules
-  #       run: cd backend && chmod -R a+x node_modules
-  #     - name: test
-  #       run: cd backend && npm run test
+  frontend_tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: npm install
+        run: cd frontend && npm install
+      - name: build
+        run: cd frontend && npm run build
+      - name: test
+        run: cd frontend && npm run test
+  backend_tests:
+    runs-on: ubuntu-20.04
+    needs: frontend_tests
+    env: 
+      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: npm install backend
+        run: cd backend && npm install
+      - name: permissions for node_modules
+        run: cd backend && chmod -R a+x node_modules
+      - name: test
+        run: cd backend && npm run test
   e2e_tests:
     runs-on: ubuntu-20.04
-    # needs: backend_tests
+    needs: [frontend_tests,backend_tests]
     env: 
       TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
     steps:
@@ -52,8 +52,6 @@ jobs:
         run: cd backend && npm install
       - name: npm install frontend
         run: cd frontend && npm install
-      # - name: build ui
-      #   run: cd backend && npm run start:test
       - name: verify cypress
         run: cd frontend && npx cypress verify
       - name: e2e tests
@@ -92,7 +90,7 @@ jobs:
     steps:
       - name: Tests and build succeeded
         uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.simple_tests.result, 'success') && contains(needs.deploy.result, 'success') }}
+        if: ${{ always() && contains(needs.e2e_tests.result, 'success') && contains(needs.deploy.result, 'success') }}
         with:
             severity: success
             username: CICD Bot
@@ -103,7 +101,7 @@ jobs:
             webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}     
       - name: Deployment failed
         uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.deploy.result, 'failure') && contains(needs.simple_tests.result, 'success') }}
+        if: ${{ always() && contains(needs.deploy.result, 'failure') && contains(needs.e2e_tests.result, 'success') }}
         with:
             severity: error
             username: CICD Bot
@@ -113,7 +111,7 @@ jobs:
             webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Tests failed
         uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.simple_tests.result, 'failure')}}
+        if: ${{ always() && contains(needs.e2e_tests.result, 'failure')}}
         with:
             severity: error
             username: CICD Bot
@@ -126,7 +124,7 @@ jobs:
     env:
       COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
     if: ${{ github.event_name == 'push' && !contains(join(github.event.head_commit.message), '#skip') }}
-    needs: [e2e_tests]
+    needs: [deploy]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
