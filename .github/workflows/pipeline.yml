@@ -72,17 +72,17 @@ jobs:
         uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
         if: ${{ always() && contains(needs.tests.result, 'success') && contains(needs.deploy.result, 'success') }}
         with:
-          args: "Tests and deployment succeeded for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
+          args: "Tests and deployment succeeded for ${{ github.repository }} by ${{ github.actor }}"
       - name: Deployment failed
         uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
         if: ${{ always() && contains(needs.deploy.result, 'failure') && contains(needs.tests.result, 'success') }}
         with:
-          args: "Deployment failed for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
+          args: "Deployment failed for ${{ github.repository }} by ${{ github.actor }}"
       - name: Tests failed
         uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
         if: ${{ always() && contains(needs.tests.result, 'failure')}}
         with:
-          args: "Tests failed for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
+          args: "Tests failed for ${{ github.repository }} by ${{ github.actor }}"
   tag-release:
     name: Tag release
     env:
