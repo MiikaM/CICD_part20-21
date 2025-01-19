@@ -52,6 +52,8 @@ jobs:
         run: cd backend && npm install
       - name: npm install frontend
         run: cd frontend && npm install 
+      - name: verify cypress
+        run: cd frontend && npx cypress verify
       - name: e2e tests
         uses: cypress-io/github-action@v6
         with:
