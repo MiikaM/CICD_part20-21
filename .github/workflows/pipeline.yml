@@ -60,7 +60,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: frontend
-          start: cd ../backend && npm run start:test
+          start: npm run test:server
           install: false
           wait-on: http://localhost:3000
   deploy:
