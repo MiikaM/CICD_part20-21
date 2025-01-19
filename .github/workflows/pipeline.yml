@@ -9,8 +9,10 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  frontend_tests:
+  tests:
     runs-on: ubuntu-20.04
+    env: 
+      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -18,40 +20,16 @@ jobs:
           node-version: "16"
       - name: npm install
         run: cd frontend && npm install
-      - name: build
+      - name: build frontend
         run: cd frontend && npm run build
-      - name: test
+      - name: test frontend
         run: cd frontend && npm run test
-  backend_tests:
-    runs-on: ubuntu-20.04
-    needs: frontend_tests
-    env: 
-      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16"
       - name: npm install backend
         run: cd backend && npm install
-      - name: permissions for node_modules
+      - name: permissions for node_modules backend
         run: cd backend && chmod -R a+x node_modules
-      - name: test
+      - name: test backend
         run: cd backend && npm run test
-  e2e_tests:
-    runs-on: ubuntu-20.04
-    needs: [frontend_tests,backend_tests]
-    env: 
-      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-      - name: npm install backend
-        run: cd backend && npm install
-      - name: npm install frontend
-        run: cd frontend && npm install
       - name: verify cypress
         run: cd frontend && npx cypress verify
       - name: e2e tests
@@ -60,11 +38,11 @@ jobs:
           working-directory: frontend
           start: npm run test:server
           install: false
-          wait-on: http://localhost:3000
+          wait-on: http://localhost:3000      
   deploy:
     name: Deploy app
     if: ${{ github.event_name == 'push' && !contains(join(github.event.head_commit.message), '#skip') }}
-    needs: e2e_tests
+    needs: test
     runs-on: ubuntu-latest
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -83,42 +61,28 @@ jobs:
       - name: deploy
         run: cd backend && flyctl deploy --remote-only
   webhook:
-    name: Send notification
+    name: Send Discord notification
     runs-on: ubuntu-20.04
-    needs: [e2e_tests, deploy]
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
+    needs: [tests, deploy]
     if: ${{ always() && !cancelled() && github.event_name == 'push' }}
     steps:
       - name: Tests and build succeeded
-        uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.e2e_tests.result, 'success') && contains(needs.deploy.result, 'success') }}
+        uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
+        if: ${{ always() && contains(needs.tests.result, 'success') && contains(needs.deploy.result, 'success') }}
         with:
-            severity: success
-            username: CICD Bot
-            description: A new version of the application has been deployed.
-            color: '#4BB543'
-            text: Tests and deployment succeeded .
-            details: "The deployed application is available at ${{ secrets.FLY_APP_URI }} by ${{ github.actor }}"
-            webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}     
+          args: "Tests and deployment succeeded for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
       - name: Deployment failed
-        uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.deploy.result, 'failure') && contains(needs.e2e_tests.result, 'success') }}
+        uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
+        if: ${{ always() && contains(needs.deploy.result, 'failure') && contains(needs.tests.result, 'success') }}
         with:
-            severity: error
-            username: CICD Bot
-            color: '#DDDDDD'
-            text: App deployment failed.
-            details: Something wrong with the deployment process. The application was not deployed!
-            webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          args: "Deployment failed for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
       - name: Tests failed
-        uses: rjstone/discord-webhook-notify@v1
-        if: ${{ always() && contains(needs.e2e_tests.result, 'failure')}}
+        uses: Ilshidur/action-discord@0c4b27844ba47cb1c7bee539c8eead5284ce9fa9
+        if: ${{ always() && contains(needs.tests.result, 'failure')}}
         with:
-            severity: error
-            username: CICD Bot
-            color: '#DB0F13'
-            text: Tests and build failed.
-            details: Workflow failed application was not deployed
-            webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          args: "Tests failed for ${{ EVENT_PAYLOAD.repository.full_name }} by ${{ github.actor }}"
   tag-release:
     name: Tag release
     env:
