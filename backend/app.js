@@ -25,7 +25,7 @@ mongoose.connect(mongoUrl, { useCreateIndex: true, useFindAndModify: false, useN
   })
 
 app.use(cors())
-app.use(express.static('dist'))
+app.use(express.static('build'))
 app.use(express.json())
 app.use(middleware.morg)
 app.use(middleware.tokenExtractor)

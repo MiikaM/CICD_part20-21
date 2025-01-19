@@ -2,7 +2,7 @@
 
 echo "Hello from shell script"
 
-HTMLCode=$(curl -s https://5-blogilistanbackend.fly.dev/health)
+HTMLCode=$(curl -s https://bloglistmadness.fly.dev/health)
 
 if [ "$HTMLCode" = "ok" ]; then
     echo "success"
