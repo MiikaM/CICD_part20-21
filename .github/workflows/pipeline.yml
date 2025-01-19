@@ -16,16 +16,14 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - name: move to repo
-        run: cd frontend
       - name: npm install
         run: cd frontend && npm install
       - name: lint
-        run: npm run eslint
+        run: cd frontend && npm run eslint
       - name: build
-        run: npm run build
+        run: cd frontend && npm run build
       - name: test
-        run: npm run test
+        run: cd frontend && npm run test
   backend_tests:
     runs-on: ubuntu-20.04
     needs: frontend_tests
@@ -34,16 +32,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - name: move to repo
-        run: cd frontend
       - name: npm install
-        run: npm install
+        run: cd backend && npm install
       - name: lint
-        run: npm run eslint
-      - name: build
-        run: npm run build
+        run: cd backend && npm run eslint
       - name: test
-        run: npm run test
+        run: cd backend && npm run test
   e2e_tests:
     runs-on: ubuntu-20.04
     needs: backend_tests
@@ -52,18 +46,16 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - name: move to repo
-        run: cd backend
+      
       - name: npm install backend
-        run: npm install
-      - name: move to frontend
-        run: cd ../frontend
+        run: cd backend && npm install
       - name: npm install frontend
-        run: npm install 
+        run: cd frontend && npm install 
       - name: e2e tests
         uses: cypress-io/github-action@v5
         with:
-          start: cd ../backend && npm run start:test 
+          start: cd ../backend && npm run start:test
+          working-directory: frontend
   deploy:
     name: Deploy app
     if: ${{ github.event_name == 'push' && !contains(join(github.event.head_commit.message), '#skip') }}
