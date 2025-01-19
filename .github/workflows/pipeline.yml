@@ -19,7 +19,7 @@ jobs:
       - name: move to repo
         run: cd frontend
       - name: npm install
-        run: npm install
+        run: cd frontend && npm install
       - name: lint
         run: npm run eslint
       - name: build
