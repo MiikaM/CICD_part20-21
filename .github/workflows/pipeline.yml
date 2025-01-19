@@ -25,6 +25,8 @@ jobs:
   backend_tests:
     runs-on: ubuntu-20.04
     needs: frontend_tests
+    env: 
+      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -66,14 +68,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - name: move to repo
-        run: cd backend
       - name: npm install
-        run: npm install
+        run: cd backend && npm install
       - name: build ui
-        run: npm run build:ui
+        run: cd backend && npm run build:ui
       - name: deploy
-        run: flyctl deploy --remote-only
+        run: cd backend && flyctl deploy --remote-only
   webhook:
     name: Send notification
     runs-on: ubuntu-20.04
