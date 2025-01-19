@@ -52,15 +52,17 @@ jobs:
         run: cd backend && npm install
       - name: npm install frontend
         run: cd frontend && npm install
-      - name: build ui
-        run: cd backend && npm run start:test
+      # - name: build ui
+      #   run: cd backend && npm run start:test
       - name: verify cypress
         run: cd frontend && npx cypress verify
       - name: e2e tests
         uses: cypress-io/github-action@v6
         with:
-          install: false
           working-directory: frontend
+          start: cd ../backend && npm run start:test
+          install: false
+          wait-on: http://localhost:3000
   deploy:
     name: Deploy app
     if: ${{ github.event_name == 'push' && !contains(join(github.event.head_commit.message), '#skip') }}
