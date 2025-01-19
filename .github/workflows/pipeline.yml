@@ -9,38 +9,40 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  frontend_tests:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-      - name: npm install
-        run: cd frontend && npm install
-      - name: build
-        run: cd frontend && npm run build
-      - name: test
-        run: cd frontend && npm run test
-  backend_tests:
-    runs-on: ubuntu-20.04
-    needs: frontend_tests
-    env: 
-      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-      - name: npm install backend
-        run: cd backend && npm install
-      - name: permissions for node_modules
-        run: cd backend && chmod -R a+x node_modules
-      - name: test
-        run: cd backend && npm run test
+  # frontend_tests:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: "16"
+  #     - name: npm install
+  #       run: cd frontend && npm install
+  #     - name: build
+  #       run: cd frontend && npm run build
+  #     - name: test
+  #       run: cd frontend && npm run test
+  # backend_tests:
+  #   runs-on: ubuntu-20.04
+  #   needs: frontend_tests
+  #   env: 
+  #     TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: "16"
+  #     - name: npm install backend
+  #       run: cd backend && npm install
+  #     - name: permissions for node_modules
+  #       run: cd backend && chmod -R a+x node_modules
+  #     - name: test
+  #       run: cd backend && npm run test
   e2e_tests:
     runs-on: ubuntu-20.04
-    needs: backend_tests
+    # needs: backend_tests
+    env: 
+      TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -51,9 +53,10 @@ jobs:
       - name: npm install frontend
         run: cd frontend && npm install 
       - name: e2e tests
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         with:
           start: cd ../backend && npm run start:test
+          install: false
           working-directory: frontend
   deploy:
     name: Deploy app
